@@ -1,2 +1,4 @@
-source_files/*.m4a
+source_files/*.wav
 .DS_Store
+env/
+__pycache__/
