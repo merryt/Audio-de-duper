@@ -1,9 +1,35 @@
 import speech_recognition as sr
 from difflib import SequenceMatcher
 import glob
-
+import json
+import pprint
 
 r = sr.Recognizer()
+
+
+def write_transcription_to_disk(file_name, transcription, json_file_name='transcriptions.json'):
+    audio_pair = {"name": file_name, "transcription": transcription}
+    with open(json_file_name, 'r+') as json_outfile:
+        contents_of_file = json.load(json_outfile)
+        contents_of_file.append(audio_pair)
+        json_outfile.seek(0)
+        json_outfile.write(json.dumps(contents_of_file))
+
+
+def has_file_been_transcribed(storage_file_name, audio_file_name):
+    """
+    Inputs name of a file that has transcriptions, and name of audio file
+    opens that file up and checks to see if that audio has been transcribed, if the file doesn't exist it returns false
+    """
+
+    with open(storage_file_name) as json_file:
+        data = json.load(json_file)
+        for audio_pair in data:
+            if audio_pair["name"] == audio_file_name:
+                return audio_pair
+
+    return False
+
 
 def input_audio_file(filename):
     audio_file = sr.AudioFile(filename)
@@ -19,7 +45,7 @@ def transcribe_audio(audio):
 
 
 def string_are_similar(string_one, string_two):
-    if(SequenceMatcher(None, string_one, string_two).ratio() < .5):
+    if (SequenceMatcher(None, string_one, string_two).ratio() < .1):
         return False
     else:
         return True
@@ -37,9 +63,14 @@ def build_list_of_transcriptions(list_of_files):
     list_of_transcriptions = []
     for file in list_of_files:
         audio = input_audio_file(file)
-        transcription = transcribe_audio(audio)
-        list_of_transcriptions.append({'name': file, 'transcript': transcription})
-
+        audio_pair = has_file_been_transcribed("transcriptions.json", file)
+        if audio_pair:
+            list_of_transcriptions.append(audio_pair)
+        else:
+            transcription = transcribe_audio(audio)
+            write_transcription_to_disk(file, transcription)
+            list_of_transcriptions.append({'name': file, 'transcription': transcription})
+            pprint.pprint({'name': file, 'transcription': transcription})
     return list_of_transcriptions
 
 
@@ -47,8 +78,8 @@ def compaire_list(list_of_transcripts):
     """
     expects a list like
         [
-            {"name": "file name", "transcript":"this is a long string},
-            {"name": "anouther file name", "transcript": "here is a different string"},
+            {"name": "file name", "transcription":"this is a long string},
+            {"name": "anouther file name", "transcription": "here is a different string"},
         ]
 
     it will return the name of files that are similar
@@ -58,19 +89,34 @@ def compaire_list(list_of_transcripts):
         first_item = list_of_transcripts[0]
         for i in range(1, len(list_of_transcripts)):
             current_item = list_of_transcripts[i]
-            # print(f"{len(first_item['transcript'])} is the length of item one")
-            # print(f"{len(current_item['transcript'])} is the length of item one")
-            if(string_are_similar(first_item["transcript"], current_item["transcript"])):
+            if (string_are_similar(first_item["transcription"], current_item["transcription"])):
                 similarity = f"{first_item['name']} is similar to {current_item['name']}"
-                print(similarity)
                 list_of_similarities.append(similarity)
         list_of_transcripts = list_of_transcripts[1:]
 
     return list_of_similarities
 
-waking_up_episodes = get_list_of_waves("source_files", maintain_subdirectory=True)
-waking_up_transcriptions = build_list_of_transcriptions(waking_up_episodes)
-print(compaire_list(waking_up_transcriptions))
 
-# firstfile = input_audio_file("source_files/Daily 2018-11-10.wav")
-# transcribe_audio(firstfile)
+try:
+    with open('transcriptions.json', 'r') as outfile:
+        json.load(outfile)
+except:
+    new_file = open('transcriptions.json', 'w')
+    new_file.write("[]")
+
+
+
+
+# first_file_name = "source_files/Daily 2018-11-10.wav"
+# firstfile = input_audio_file(first_file_name)
+# transcribed_audio = transcribe_audio(firstfile)
+# write_transcription_to_disk(first_file_name, transcribed_audio)
+
+
+
+
+#
+#
+# waking_up_episodes = get_list_of_waves("source_files", maintain_subdirectory=True)
+# waking_up_transcriptions = build_list_of_transcriptions(waking_up_episodes)
+# print(compaire_list(waking_up_transcriptions))
