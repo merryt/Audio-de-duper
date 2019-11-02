@@ -1,7 +1,7 @@
 from deduper import input_audio_file, transcribe_audio, string_are_similar, get_list_of_waves, compaire_list, has_file_been_transcribed, write_transcription_to_disk
 import unittest
 from speech_recognition import AudioData
-
+import json
 
 class newFiles(unittest.TestCase):
     def setUp(self):
@@ -17,10 +17,8 @@ class newFiles(unittest.TestCase):
             {"name": "file4.wav", "transcription": self.audio4},
             {"name": "file5.wav ", "transcription": self.audio5},
         ]
-        new_file = open('test_transcriptions.json', 'w')
-        new_file.write("[]")
-        for audio_pair in self.list_of_files:
-            write_transcription_to_disk(audio_pair["name"], audio_pair["transcription"], json_file_name="test_transcriptions.json")
+        new_file = open('testtranscriptions.json', 'w')
+        new_file.write(json.dumps(self.list_of_files))
 
     def test_inputing_a_file(self):
         # make sure function exists
@@ -54,7 +52,7 @@ class newFiles(unittest.TestCase):
 
     def test_reading_file_from_disk(self):
         self.assertTrue(has_file_been_transcribed)
-        self.assertTrue(has_file_been_transcribed("test_transcriptions.json", "file1.wav"), "transcription.json isn't getting read correctly from disk")
+        self.assertTrue(has_file_been_transcribed('testtranscriptions.json', 'file1.wav'), "transcription.json isn't getting read correctly from disk")
 
 if __name__ == '__main__':
     unittest.main(warnings='ignore')
